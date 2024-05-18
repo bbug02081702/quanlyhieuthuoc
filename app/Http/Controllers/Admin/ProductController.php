@@ -52,6 +52,11 @@ class ProductController extends Controller
                         return $product->purchase->quantity;
                     }
                 })
+                ->addColumn('discount',function($product){
+                    if(!empty($product)){
+                        return $product->discount;
+                    }
+                })
                 ->addColumn('expiry_date',function($product){
                     if(!empty($product->purchase)){
                         return date_format(date_create($product->purchase->expiry_date),'d M, Y');
@@ -174,9 +179,40 @@ class ProductController extends Controller
      * @return \Illuminate\Http\Response
      */
     public function expired(Request $request){
-        $title = "expired Products";
+    //     $products_with_purchases = Product::join('purchases', 'products.purchase_id', '=', 'purchases.id')
+    //     ->select('products.*', 'purchases.product', 'purchases.category_id', 'purchases.supplier_id', 'purchases.cost_price', 'purchases.quantity', 'purchases.expiry_date', 'purchases.image')
+    //     ->get();
+
+    // foreach ($products_with_purchases as $product) {
+    //     $product_name = $product->product;
+    //     $category_id = $product->category_id;
+    //     $supplier_id = $product->supplier_id;
+    //     $cost_price = $product->cost_price;
+    //     $quantity = $product->quantity;
+    //     $expiry_date = $product->expiry_date;
+    //     $image = $product->image;
+    //     $price = $product->price;
+    //     $discount = $product->discount;
+    //     $description = $product->description;
+    // }
+    // dd($products_with_purchases);
+        $title = "thuốc hết hạn";
         if($request->ajax()){
-            $products = Purchase::whereDate('expiry_date', '=', Carbon::now())->get();
+            // $products = Purchase::whereDate('expiry_date', '<', Carbon::now())->get();
+            // $products_discount = Product::latest();
+            $products = Product::join('purchases', 'products.purchase_id', '=', 'purchases.id')
+            ->whereDate('purchases.expiry_date', '<', Carbon::now())
+            ->select(
+                'products.*', 
+                'purchases.product', 
+                'purchases.category_id', 
+                'purchases.supplier_id', 
+                'purchases.cost_price', 
+                'purchases.quantity', 
+                'purchases.expiry_date', 
+                'purchases.image'
+            )
+            ->get();
             return DataTables::of($products)
                 ->addColumn('product',function($product){
                     $image = '';
@@ -206,6 +242,9 @@ class ProductController extends Controller
                         return $product->purchase->quantity;
                     }
                 })
+                ->addColumn('discount',function( $product){
+                    return $product->discount;
+                })
                 ->addColumn('expiry_date',function($product){
                     if(!empty($product->purchase)){
                         return date_format(date_create($product->purchase->expiry_date),'d M, Y');
@@ -225,6 +264,8 @@ class ProductController extends Controller
                 })
                 ->rawColumns(['product','action'])
                 ->make(true);
+
+                
         }
 
         return view('admin.products.expired',compact(
@@ -241,7 +282,20 @@ class ProductController extends Controller
     public function outstock(Request $request){
         $title = "Sản phẩm thuốc hết hàng";
         if($request->ajax()){
-            $products = Purchase::where('quantity', '<=', 0)->get();
+            // $products = Purchase::where('quantity', '<=', 0)->get();
+            $products = Product::join('purchases', 'products.purchase_id', '=', 'purchases.id')
+            ->where('purchases.quantity', '<=', 0)
+            ->select(
+                'products.*', 
+                'purchases.product', 
+                'purchases.category_id', 
+                'purchases.supplier_id', 
+                'purchases.cost_price', 
+                'purchases.quantity', 
+                'purchases.expiry_date', 
+                'purchases.image'
+            )
+            ->get();
             return DataTables::of($products)
                 ->addColumn('product',function($product){
                     $image = '';
@@ -291,7 +345,7 @@ class ProductController extends Controller
                 ->rawColumns(['product','action'])
                 ->make(true);
         }
-        $product = Purchase::where('quantity', '<=', 0)->first();        
+        // $product = Purchase::where('quantity', '<=', 0)->first();        
         return view('admin.products.outstock',compact(
             'title',
         ));

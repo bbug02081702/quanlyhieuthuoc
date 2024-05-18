@@ -74,6 +74,10 @@ class SaleController extends Controller
     public function create()
     {
         $title = 'Tạo bán thuốc';
+         // Kiểm tra quyền truy cập
+        //  if (!auth()->user()->hasPermissionTo('create-sale')) {
+        //     return redirect()->back()->with('error', 'Bạn không có quyền truy cập vào tính năng này.');
+        // }
         $products = Product::get();
         return view('admin.sales.create',compact(
             'title','products'
@@ -97,6 +101,7 @@ class SaleController extends Controller
        
         $purchased_item = Purchase::find($sold_product->purchase->id);
         $new_quantity = ($purchased_item->quantity) - ($request->quantity);
+    
         $notification = '';
         if (!($new_quantity < 0)){
 
@@ -116,6 +121,14 @@ class SaleController extends Controller
 
             $notification = notify("Sản phẩm thuốc đã được bán");
         } 
+        
+        if($new_quantity == 0){
+            $product = Purchase::where('quantity', '==', 0)->first();
+            event(new PurchaseOutStock($product));
+            $notification = notify("Sản phẩm thuốc đã hết hàng!!!");
+            
+        }
+
         if($new_quantity <=1 && $new_quantity !=0){
             $product = Purchase::where('quantity', '<=', 1)->first();
             event(new PurchaseOutStock($product));
@@ -127,7 +140,6 @@ class SaleController extends Controller
     }
 
     
-
     /**
      * Show the form for editing the specified resource.
      *

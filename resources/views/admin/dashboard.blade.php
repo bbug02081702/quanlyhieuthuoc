@@ -67,6 +67,7 @@
                     </span>
                     <div class="dash-count">
                         <h3>{{$total_expired_products}}</h3>
+                        <!-- <h3>{{$best_selling_product_name}}</h3> -->
                     </div>
                 </div>
                 <div class="dash-widget-info">
